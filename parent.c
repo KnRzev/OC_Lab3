@@ -25,8 +25,7 @@ typedef struct {
     char ready_name[128];
 } ipc_t;
 
-static int write_all(int fd, const char *buffer, size_t length)
-{
+static int write_all(int fd, const char *buffer, size_t length){
     size_t sent = 0;
     while (sent < length) {
         ssize_t n = write(fd, buffer + sent, length - sent);
@@ -41,8 +40,7 @@ static int write_all(int fd, const char *buffer, size_t length)
     return 0;
 }
 
-static void report_error(const char *message)
-{
+static void report_error(const char *message){
     size_t length = 0;
     while (message[length] != '\0') {
         length++;
@@ -50,8 +48,7 @@ static void report_error(const char *message)
     (void)write_all(STDERR_FILENO, message, length);
 }
 
-static int print_number(long long value)
-{
+static int print_number(long long value){
     char reversed[3 * sizeof(long long) + 3];
     size_t length = 0;
     long long current = value;
@@ -75,8 +72,7 @@ static int print_number(long long value)
     return write_all(STDOUT_FILENO, output, length + 1);
 }
 
-static int create_ipc(ipc_t *ipc)
-{
+static int create_ipc(ipc_t *ipc){
     struct timespec now;
     if (clock_gettime(CLOCK_REALTIME, &now) == -1) {
         perror("Cannot get time for IPC names");
@@ -132,8 +128,7 @@ static int create_ipc(ipc_t *ipc)
     return 0;
 }
 
-static int destroy_ipc(ipc_t *ipc)
-{
+static int destroy_ipc(ipc_t *ipc){
     int failed = 0;
     if (ipc->ready != SEM_FAILED) {
         if (sem_unlink(ipc->ready_name) == -1) {
@@ -173,8 +168,7 @@ static int destroy_ipc(ipc_t *ipc)
     return failed ? -1 : 0;
 }
 
-static int wait_for_message(sem_t *ready, pid_t pid, int *status, int *reaped)
-{
+static int wait_for_message(sem_t *ready, pid_t pid, int *status, int *reaped){
     while (1) {
         struct timespec deadline;
         if (clock_gettime(CLOCK_REALTIME, &deadline) == -1) {
@@ -215,8 +209,7 @@ static int wait_for_message(sem_t *ready, pid_t pid, int *status, int *reaped)
     }
 }
 
-int main(void)
-{
+int main(void){
     struct sigaction action = {0};
     action.sa_handler = SIG_IGN;
     if (sigemptyset(&action.sa_mask) == -1 ||

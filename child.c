@@ -17,8 +17,7 @@ typedef struct {
     sem_t *ready;
 } ipc_t;
 
-static int write_all(int fd, const char *buffer, size_t length)
-{
+static int write_all(int fd, const char *buffer, size_t length){
     size_t sent = 0;
     while (sent < length) {
         ssize_t n = write(fd, buffer + sent, length - sent);
@@ -33,8 +32,7 @@ static int write_all(int fd, const char *buffer, size_t length)
     return 0;
 }
 
-static void report_error(const char *message)
-{
+static void report_error(const char *message){
     size_t length = 0;
     while (message[length] != '\0') {
         length++;
@@ -42,9 +40,7 @@ static void report_error(const char *message)
     (void)write_all(STDERR_FILENO, message, length);
 }
 
-static int open_ipc(ipc_t *ipc, const char *shm_name,
-                    const char *empty_name, const char *ready_name)
-{
+static int open_ipc(ipc_t *ipc, const char *shm_name, const char *empty_name, const char *ready_name){
     ipc->fd = shm_open(shm_name, O_RDWR, 0);
     if (ipc->fd == -1) {
         perror("Cannot open shared memory");
@@ -63,6 +59,7 @@ static int open_ipc(ipc_t *ipc, const char *shm_name,
 
     ipc->data = mmap(NULL, sizeof(shared_data_t), PROT_READ | PROT_WRITE,
                      MAP_SHARED, ipc->fd, 0);
+
     if (ipc->data == MAP_FAILED) {
         perror("Cannot map shared memory");
         return -1;
@@ -80,8 +77,7 @@ static int open_ipc(ipc_t *ipc, const char *shm_name,
     return 0;
 }
 
-static int close_ipc(ipc_t *ipc)
-{
+static int close_ipc(ipc_t *ipc) {
     int failed = 0;
     if (ipc->ready != SEM_FAILED && sem_close(ipc->ready) == -1) {
         perror("Cannot close ready semaphore");
@@ -103,8 +99,7 @@ static int close_ipc(ipc_t *ipc)
     return failed ? -1 : 0;
 }
 
-static int send_message(ipc_t *ipc, message_type_t type, long long sum)
-{
+static int send_message(ipc_t *ipc, message_type_t type, long long sum) {
     int result;
     do {
         result = sem_wait(ipc->empty);
@@ -113,7 +108,6 @@ static int send_message(ipc_t *ipc, message_type_t type, long long sum)
         perror("Cannot wait for message slot");
         return -1;
     }
-
     ipc->data->type = type;
     ipc->data->sum = sum;
     if (sem_post(ipc->ready) == -1) {
@@ -123,15 +117,13 @@ static int send_message(ipc_t *ipc, message_type_t type, long long sum)
     return 0;
 }
 
-static int input_error(ipc_t *ipc, const char *message)
-{
+static int input_error(ipc_t *ipc, const char *message) {
     report_error(message);
     (void)send_message(ipc, MESSAGE_ERROR, 0);
     return -1;
 }
 
-static int process_input(ipc_t *ipc)
-{
+static int process_input(ipc_t *ipc) {
     char buffer[4096];
     long long sum = 0;
     long long number = 0;
@@ -153,8 +145,10 @@ static int process_input(ipc_t *ipc)
 
         int end_of_file = n == 0;
         ssize_t count = end_of_file ? 1 : n;
+
         for (ssize_t i = 0; i < count; i++) {
             char c = end_of_file ? '\n' : buffer[i];
+
             if (c >= '0' && c <= '9') {
                 if (!in_number) {
                     in_number = 1;
@@ -210,8 +204,7 @@ static int process_input(ipc_t *ipc)
     }
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     if (argc != 4) {
         report_error("Usage: ./child <shared_memory> <empty_semaphore> <ready_semaphore>\n");
         return 1;
@@ -227,7 +220,6 @@ int main(int argc, char *argv[])
         (void)close_ipc(&ipc);
         return 1;
     }
-
     int failed = process_input(&ipc) == -1;
     if (!failed && send_message(&ipc, MESSAGE_DONE, 0) == -1) {
         failed = 1;
